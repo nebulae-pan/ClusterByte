@@ -1,17 +1,18 @@
 package io.nebula.platform.clusterbyte.core
 
 import com.android.build.api.transform.QualifiedContent
-import com.android.build.api.transform.Transform
 import com.android.build.api.transform.TransformInvocation
-import com.android.build.gradle.internal.pipeline.TransformInvocationBuilder
 import com.android.build.gradle.internal.pipeline.TransformManager
+import io.nebula.platform.clusterbyte.rope.DirTraverse
+import io.nebula.platform.clusterbyte.rope.FileVisitor
+import java.io.File
 
 /**
  * @author xinghai.pan
  *
  * date : 2020-07-15 14:50
  */
-class ClusterTransform(private val clusterExtension: ClusterExtension) : Transform() {
+class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTransform() {
     override fun transform(transformInvocation: TransformInvocation?) {
         transformInvocation ?: return
         val inputs = transformInvocation.inputs
@@ -19,17 +20,14 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : Transfo
             inputs.forEach { input ->
                 input.directoryInputs.parallelStream().forEach {
                     transform.traversalDir(it)
+                    DirTraverse.traverse(it.file, object : FileVisitor {
+                        override fun onFileVisitor(file: File) {
+                            
+                        }
+                    })
                 }
                 input.jarInputs.parallelStream().forEach {
                     transform.traversalJar(it)
-                }
-            }
-
-            inputs.forEach { input ->
-                input.directoryInputs.parallelStream().forEach {
-                }
-                input.jarInputs.parallelStream().forEach {
-                    transform.onJarVisited(it.file)
                 }
             }
         }

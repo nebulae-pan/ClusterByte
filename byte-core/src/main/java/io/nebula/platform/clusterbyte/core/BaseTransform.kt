@@ -11,17 +11,8 @@ import java.io.File
  * date : 2019-07-19 18:10
  */
 abstract class BaseTransform : Transform() {
-
-    override fun getInputTypes(): MutableSet<QualifiedContent.ContentType> {
-        return TransformManager.CONTENT_JARS
-    }
-
     override fun isIncremental(): Boolean {
         return true
-    }
-
-    override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
-        return TransformManager.SCOPE_FULL_PROJECT
     }
 
     protected fun outputFiles(provider: TransformOutputProvider, directoryInput: DirectoryInput) {

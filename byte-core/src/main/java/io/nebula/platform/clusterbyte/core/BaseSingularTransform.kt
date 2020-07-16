@@ -10,7 +10,7 @@ import java.io.File
  *
  * date : 2020-07-14 16:30
  */
-abstract class BaseSingularTransform : Transform() {
+abstract class BaseSingularTransform : BaseTransform() {
 
     abstract fun traversalDir(dirInput: DirectoryInput)
 
@@ -19,8 +19,4 @@ abstract class BaseSingularTransform : Transform() {
     abstract fun onClassVisited(classFile: File): Boolean
 
     abstract fun onJarVisited(jarFile: File): Boolean
-
-    override fun isIncremental(): Boolean {
-        return true
-    }
 }
