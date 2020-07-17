@@ -4,10 +4,11 @@ apply from: '../script/upload.gradle'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "io.nebula.platform.clusterbyte:core:1.0.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.android.tools.build:gradle:3.5.3'
     implementation 'org.ow2.asm:asm:9.0-beta'
     implementation gradleApi()
-    testImplementation 'junit:junit:4.12'
 }
 
 parseLocalProperties()
@@ -20,11 +21,11 @@ uploadArchives {
         }
         pom.project {
             groupId 'io.nebula.platform.clusterbyte'
-            artifactId 'core'
+            artifactId 'plugin'
             version '1.0.0'
         }
     }
 }
 
-sourceCompatibility = "7"
-targetCompatibility = "7"
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"

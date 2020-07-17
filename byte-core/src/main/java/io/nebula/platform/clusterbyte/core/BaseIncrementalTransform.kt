@@ -4,6 +4,7 @@ import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.Status
 import com.android.build.api.transform.TransformInvocation
+import io.nebula.platform.clusterbyte.rope.Log
 import org.apache.commons.io.FileUtils
 import java.io.File
 

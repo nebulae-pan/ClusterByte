@@ -9,7 +9,7 @@ import java.util.concurrent.RecursiveAction
  *
  * date : 2020-07-16 14:41
  */
-class FileTraverseTask(
+class ClassTraverseTask(
     private val baseDir: File,
     private val visitor: FileVisitor
 ) : RecursiveAction() {
@@ -17,10 +17,10 @@ class FileTraverseTask(
         val tasks = arrayListOf<RecursiveAction>()
         baseDir.listFiles()?.forEach {
             if (it.isDirectory) {
-                FileTraverseTask(it, visitor).apply {
+                ClassTraverseTask(it, visitor).apply {
                     tasks.add(this)
                 }
-            } else {
+            } else if (it.name.endsWith(".class")) {
                 visitor.onFileVisitor(it)
             }
         }

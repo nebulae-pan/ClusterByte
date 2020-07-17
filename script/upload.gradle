@@ -1,3 +1,5 @@
+apply plugin: 'maven'
+
 ext {
     parseLocalProperties = this.&parseLocalProperties
 }
@@ -14,3 +16,5 @@ def parseLocalProperties() {
         }
     }
 }
+
+parseLocalProperties()

@@ -1,2 +1,3 @@
+include ':byte-plugin'
 include ':app', ':byte-core'
 rootProject.name='ClusterByte'

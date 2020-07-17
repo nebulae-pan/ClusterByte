@@ -1,4 +1,4 @@
-package io.nebula.platform.clusterbyte.core
+package io.nebula.platform.clusterbyte.rope
 
 /**
  * level :
@@ -37,11 +37,17 @@ object Log {
     }
 
     fun e(msg: String) {
-        doErrorLog(1, msg = "error: $msg")
+        doErrorLog(
+            1,
+            msg = "error: $msg"
+        )
     }
 
     fun w(msg: String) {
-        doNormalLog(2, msg = "warning: $msg")
+        doNormalLog(
+            2,
+            msg = "warning: $msg"
+        )
     }
 
     fun p(msg: String) {

@@ -1,6 +1,7 @@
-package io.nebula.platform.clusterbyte.core
+package io.nebula.platform.cluster.plugin
 
 import com.android.build.gradle.BaseExtension
+import io.nebula.platform.clusterbyte.core.ClusterExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
