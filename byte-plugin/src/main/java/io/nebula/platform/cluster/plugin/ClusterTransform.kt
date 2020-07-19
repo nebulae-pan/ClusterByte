@@ -7,7 +7,7 @@ import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
 import io.nebula.platform.clusterbyte.rope.FileVisitor
-import io.nebula.platform.clusterbyte.rope.Log
+import io.nebula.platform.clusterbyte.wrapper.ClusterVisitorChain
 import org.apache.commons.io.FileUtils
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
@@ -48,13 +48,14 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
                         val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
                         val destFile = File(destClassFilePath)
                         val classReader = ClassReader(file.inputStream())
+                        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+                        val chain = ClusterVisitorChain(classWriter)
                         clusterExtension.transforms.forEach trans@{ transform ->
-                            if (transform.onClassVisited(file, classReader)) {
+                            if (transform.onClassVisited(file, chain)) {
                                 return@trans
                             }
                         }
-                        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-                        classReader.accept(classWriter, ClassReader.EXPAND_FRAMES)
+                        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
                         if (!destFile.exists()) {
                             FileUtils.forceMkdir(destFile.parentFile)
                         }

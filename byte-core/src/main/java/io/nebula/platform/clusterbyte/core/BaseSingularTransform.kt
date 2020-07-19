@@ -4,7 +4,7 @@ import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.QualifiedContent
 import com.android.build.gradle.internal.pipeline.TransformManager
-import org.objectweb.asm.ClassReader
+import io.nebula.platform.clusterbyte.wrapper.ClusterVisitorChain
 import java.io.File
 
 /**
@@ -18,7 +18,7 @@ abstract class BaseSingularTransform : BaseTransform() {
 
     abstract fun traversalJar(jarInput: JarInput)
 
-    abstract fun onClassVisited(classFile: File, classReader: ClassReader): Boolean
+    abstract fun onClassVisited(classFile: File, chain: ClusterVisitorChain): Boolean
 
     abstract fun onJarVisited(jarFile: File): Boolean
 
