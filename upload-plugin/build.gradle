@@ -1,0 +1,33 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+apply plugin: 'maven'
+apply from: '../script/upload.gradle'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'com.android.tools.build:gradle:3.5.3'
+    implementation localGroovy()
+    //gradle sdk
+    implementation gradleApi()
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
+
+uploadArchives {
+    def local = LOCAL == "1"
+    repositories.mavenDeployer {
+        if (local) {
+            repository(url: uri(LOCALREPO))
+        } else {
+            repository(url: uri(MAVENREPO))
+        }
+        pom.project {
+            groupId "io.nebula.platform.plugin"
+            artifactId 'upload'
+            version '1.0.0'
+        }
+    }
+}
+

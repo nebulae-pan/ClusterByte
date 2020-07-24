@@ -6,7 +6,7 @@ import org.objectweb.asm.ClassVisitor
 /**
  * Created by nebula on 2020-07-19
  */
-class SingularClassVisitor : ClassVisitor {
+abstract class SingularClassVisitor : ClassVisitor {
     constructor() : super(DEFAULT_ASM_CODE)
 
     constructor(visitor: ClassVisitor) : super(DEFAULT_ASM_CODE, visitor)
