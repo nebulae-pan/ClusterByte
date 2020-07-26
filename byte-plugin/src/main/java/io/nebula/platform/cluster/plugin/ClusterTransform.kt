@@ -1,6 +1,8 @@
 package io.nebula.platform.cluster.plugin
 
+import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.QualifiedContent
+import com.android.build.api.transform.Status
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import io.nebula.platform.clusterbyte.core.BaseTransform
@@ -22,7 +24,8 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
     override fun transform(transformInvocation: TransformInvocation?) {
         transformInvocation ?: return
         val outputProvider = transformInvocation.outputProvider
-        if (!transformInvocation.isIncremental) {
+        val isIncremental = transformInvocation.isIncremental
+        if (isIncremental) {
             outputProvider.deleteAll()
         }
         val inputs = transformInvocation.inputs
@@ -42,36 +45,84 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
             input.directoryInputs.parallelStream().forEach {
                 val srcPath = it.file.absolutePath
                 val destPath = getOutputDir(outputProvider, it).absolutePath
-
-                ClassTraverse.traverse(it.file, object : FileVisitor {
-                    override fun onFileVisitor(file: File) {
-                        val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
-                        val destFile = File(destClassFilePath)
-                        val classReader = ClassReader(file.inputStream())
-                        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-                        val chain = ClusterVisitorChain(classWriter)
-                        clusterExtension.transforms.forEach trans@{ transform ->
-                            if (transform.onClassVisited(file, chain)) {
-                                return@trans
-                            }
-                        }
-                        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
-                        if (!destFile.exists()) {
-                            FileUtils.forceMkdir(destFile.parentFile)
-                        }
-                        destFile.writeBytes(classWriter.toByteArray())
-                    }
-                })
+                if (isIncremental) {
+                    processIncremental(it, srcPath, destPath)
+                } else {
+                    processFullBuild(it, srcPath, destPath)
+                }
             }
             input.jarInputs.parallelStream().forEach {
-                clusterExtension.transforms.forEach { transform ->
-                    transform.onJarVisited(it.file)
-                }
                 val destFile = getOutputJar(outputProvider, it)
-                FileUtils.copyFile(it.file, destFile)
+                if (isIncremental) {
+                    clusterExtension.transforms.forEach { transform ->
+                        transform.onJarVisited(it.file, it.status)
+                    }
+                    if (it.status == Status.REMOVED) {
+                        if (destFile.exists()) {
+                            FileUtils.forceDelete(destFile)
+                        }
+                    } else {
+                        FileUtils.copyFile(it.file, destFile)
+                    }
+                } else {
+                    clusterExtension.transforms.forEach { transform ->
+                        transform.onJarVisited(it.file, Status.ADDED)
+                    }
+                    FileUtils.copyFile(it.file, destFile)
+                }
             }
         }
 
+    }
+
+    private fun processFullBuild(
+        it: DirectoryInput,
+        srcPath: String,
+        destPath: String
+    ) {
+        ClassTraverse.traverse(it.file, object : FileVisitor {
+            override fun onFileVisitor(file: File) {
+                transformClassVisitor(file, srcPath, destPath, Status.ADDED)
+            }
+        })
+    }
+
+    private fun processIncremental(
+        it: DirectoryInput,
+        srcPath: String,
+        destPath: String
+    ) {
+        it.changedFiles.forEach { (file, status) ->
+            transformClassVisitor(file, srcPath, destPath, status)
+        }
+    }
+
+    private fun transformClassVisitor(
+        file: File,
+        srcPath: String,
+        destPath: String,
+        status: Status
+    ) {
+        val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
+        val destFile = File(destClassFilePath)
+        val classReader = ClassReader(file.inputStream())
+        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+        val chain = ClusterVisitorChain(classWriter)
+        clusterExtension.transforms.forEach trans@{ transform ->
+            if (transform.onClassVisited(status, file, chain)) {
+                return@trans
+            }
+        }
+        if (status == Status.REMOVED) {
+            if (destFile.exists()) {
+                FileUtils.forceDelete(destFile)
+            }
+        }
+        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
+        if (!destFile.exists()) {
+            FileUtils.forceMkdir(destFile.parentFile)
+        }
+        destFile.writeBytes(classWriter.toByteArray())
     }
 
     override fun getName() = "cluster"
