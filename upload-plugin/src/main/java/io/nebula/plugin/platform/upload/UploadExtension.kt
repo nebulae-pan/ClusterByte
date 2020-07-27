@@ -13,10 +13,10 @@ open class UploadExtension {
     var localRepo: String = ""
     var remoteRepo: String = ""
 
-    internal var pom: MavenPom? = null
+    var pom: PomExtension = PomExtension()
 
-    fun pom(action: Action<MavenPom>) {
-        val pom = this.pom ?: return
+    fun pom(action: Action<PomExtension>) {
+        val pom = this.pom
         action.execute(pom)
     }
 }

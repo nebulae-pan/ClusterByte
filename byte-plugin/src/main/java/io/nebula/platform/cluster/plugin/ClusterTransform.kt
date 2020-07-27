@@ -5,15 +5,20 @@ import com.android.build.api.transform.QualifiedContent
 import com.android.build.api.transform.Status
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
+import com.google.gson.reflect.TypeToken
+import io.nebula.platform.clusterbyte.converter.ConverterFactory
+import io.nebula.platform.clusterbyte.core.BaseSingularTransform
 import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
 import io.nebula.platform.clusterbyte.rope.FileVisitor
-import io.nebula.platform.clusterbyte.wrapper.ClusterVisitorChain
+import io.nebula.platform.clusterbyte.wrapper.ClusterChain
 import org.apache.commons.io.FileUtils
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import java.io.File
+import java.lang.RuntimeException
+import java.lang.reflect.ParameterizedType
 
 /**
  * @author xinghai.pan
@@ -55,7 +60,7 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
                 val destFile = getOutputJar(outputProvider, it)
                 if (isIncremental) {
                     clusterExtension.transforms.forEach { transform ->
-                        transform.onJarVisited(it.file, it.status)
+                        transform.onJarVisited(it.status, it.file)
                     }
                     if (it.status == Status.REMOVED) {
                         if (destFile.exists()) {
@@ -66,7 +71,7 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
                     }
                 } else {
                     clusterExtension.transforms.forEach { transform ->
-                        transform.onJarVisited(it.file, Status.ADDED)
+                        transform.onJarVisited(Status.ADDED, it.file)
                     }
                     FileUtils.copyFile(it.file, destFile)
                 }
@@ -105,24 +110,45 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
     ) {
         val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
         val destFile = File(destClassFilePath)
-        val classReader = ClassReader(file.inputStream())
-        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-        val chain = ClusterVisitorChain(classWriter)
-        clusterExtension.transforms.forEach trans@{ transform ->
-            if (transform.onClassVisited(status, file, chain)) {
-                return@trans
-            }
-        }
-        if (status == Status.REMOVED) {
-            if (destFile.exists()) {
-                FileUtils.forceDelete(destFile)
-            }
-        }
-        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
-        if (!destFile.exists()) {
-            FileUtils.forceMkdir(destFile.parentFile)
-        }
-        destFile.writeBytes(classWriter.toByteArray())
+
+        val iterator = clusterExtension.transforms.iterator()
+        val bytes = file.readBytes()
+        val first = iterator.next()
+        val transform = obtainTransform(first, first.acceptType().cast(null))
+
+        val firstTemp = retrieveFactory(first.acceptType()).classConverter().convert(bytes)
+        val chain = constructChain(firstTemp)
+        transform.onClassVisited(status, file, chain)
+
+//        while (iterator.hasNext()) {
+//            val transform = iterator.next()
+//            val type = transform.acceptType()
+//            if (chain.piece()?.javaClass == type) {
+//            }
+//            val factory = retrieveFactory(type)
+//            val temp = factory.classConverter().convert(bytes)
+//
+//        }
+
+//
+//        val classReader = ClassReader(file.inputStream())
+//        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+////        val chain = ClusterChain(classWriter)
+//        clusterExtension.transforms.forEach trans@{ transform ->
+//            if (transform.onClassVisited(status, file, chain)) {
+//                return@trans
+//            }
+//        }
+//        if (status == Status.REMOVED) {
+//            if (destFile.exists()) {
+//                FileUtils.forceDelete(destFile)
+//            }
+//        }
+//        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
+//        if (!destFile.exists()) {
+//            FileUtils.forceMkdir(destFile.parentFile)
+//        }
+//        destFile.writeBytes(classWriter.toByteArray())
     }
 
     override fun getName() = "cluster"
@@ -165,5 +191,29 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
         }
         //can be empty
         return set
+    }
+
+    private fun <T> constructChain(piece: T): ClusterChain<T> {
+        return ClusterChain(piece)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> obtainTransform(
+        transform: BaseSingularTransform<*>,
+        t: T
+    ): BaseSingularTransform<T> {
+        return transform as BaseSingularTransform<T>
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> retrieveFactory(clazz: Class<T>): ConverterFactory<T> {
+        clusterExtension.factories.forEach {
+            val type =
+                (it.javaClass.genericInterfaces[0] as ParameterizedType).actualTypeArguments[0]
+            if (clazz == type) {
+                return it as ConverterFactory<T>
+            }
+        }
+        throw RuntimeException("cannot find factory for class:${clazz.name}.")
     }
 }

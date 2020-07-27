@@ -26,7 +26,11 @@ uploadArchives {
         pom.project {
             groupId "io.nebula.platform.plugin"
             artifactId 'upload'
-            version '1.0.0'
+            if (local) {
+                version '1.0.0-test'
+            } else {
+                version '1.0.0'
+            }
         }
     }
 }

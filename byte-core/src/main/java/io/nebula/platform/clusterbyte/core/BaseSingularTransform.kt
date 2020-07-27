@@ -5,7 +5,7 @@ import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.QualifiedContent
 import com.android.build.api.transform.Status
 import com.android.build.gradle.internal.pipeline.TransformManager
-import io.nebula.platform.clusterbyte.wrapper.ClusterVisitorChain
+import io.nebula.platform.clusterbyte.wrapper.ClusterChain
 import java.io.File
 
 /**
@@ -13,7 +13,7 @@ import java.io.File
  *
  * date : 2020-07-14 16:30
  */
-abstract class BaseSingularTransform : BaseTransform() {
+abstract class BaseSingularTransform<T> : BaseTransform() {
 
     abstract fun traversalDir(dirInput: DirectoryInput)
 
@@ -22,10 +22,12 @@ abstract class BaseSingularTransform : BaseTransform() {
     abstract fun onClassVisited(
         status: Status,
         classFile: File,
-        chain: ClusterVisitorChain
+        chain: ClusterChain<T>
     ): Boolean
 
-    abstract fun onJarVisited(jarFile: File, status: Status): Boolean
+    abstract fun onJarVisited(status: Status, jarFile: File): Boolean
+
+    abstract fun acceptType(): Class<T>
 
     override fun getInputTypes(): MutableSet<QualifiedContent.ContentType> {
         return TransformManager.CONTENT_JARS
@@ -34,4 +36,5 @@ abstract class BaseSingularTransform : BaseTransform() {
     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
         return TransformManager.SCOPE_FULL_PROJECT
     }
+
 }

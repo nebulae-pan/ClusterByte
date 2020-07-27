@@ -1,6 +1,6 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
-apply from: '../script/upload.gradle'
+apply plugin: 'io.nebula.upload'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -10,19 +10,14 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
-parseLocalProperties()
-
-uploadArchives {
-    def local = LOCAL == "1"
-    repositories.mavenDeployer {
-        if (local) {
-            repository(url: uri(LOCALREPO))
-        }
-        pom.project {
-            groupId 'io.nebula.platform.clusterbyte'
-            artifactId 'core'
-            version '1.0.0'
-        }
+upload {
+    local true
+    localRepo LOCALREPO
+    remoteRepo MAVENREPO
+    pom {
+        groupId 'io.nebula.platform.clusterbyte'
+        artifactId 'core'
+        version '1.0.0'
     }
 }
 

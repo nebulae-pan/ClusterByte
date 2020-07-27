@@ -1,9 +1,3 @@
-apply plugin: 'maven'
-
-ext {
-    parseLocalProperties = this.&parseLocalProperties
-}
-
 def parseLocalProperties() {
     def file = rootProject.file('local.properties')
     if (file.exists()) {

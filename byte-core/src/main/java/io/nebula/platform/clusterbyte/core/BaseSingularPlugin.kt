@@ -1,6 +1,8 @@
 package io.nebula.platform.clusterbyte.core
 
 import com.android.build.gradle.BaseExtension
+import io.nebula.platform.clusterbyte.converter.ConverterFactory
+import io.nebula.platform.clusterbyte.converter.asm.AsmConverterFactory
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -23,11 +25,15 @@ abstract class BaseSingularPlugin : Plugin<Project> {
 
     abstract fun runAlone(): Boolean
 
-    protected fun registerTransform(transform: BaseSingularTransform) {
+    protected fun registerTransform(transform: BaseSingularTransform<*>) {
         if (runAlone() || clusterExtension == null) {
             androidExtension?.registerTransform(transform)
             return
         }
         clusterExtension?.registerRegularTransform(transform)
+    }
+
+    protected fun <T> registerConverterFactory(factory: ConverterFactory<T>) {
+        clusterExtension?.registerClassConverterFactory(factory)
     }
 }
