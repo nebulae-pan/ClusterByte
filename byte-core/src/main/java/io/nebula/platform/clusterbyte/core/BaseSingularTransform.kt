@@ -5,7 +5,6 @@ import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.QualifiedContent
 import com.android.build.api.transform.Status
 import com.android.build.gradle.internal.pipeline.TransformManager
-import io.nebula.platform.clusterbyte.wrapper.ClusterChain
 import java.io.File
 
 /**
@@ -22,7 +21,7 @@ abstract class BaseSingularTransform<T> : BaseTransform() {
     abstract fun onClassVisited(
         status: Status,
         classFile: File,
-        chain: ClusterChain<T>
+        classEntity: T
     ): Boolean
 
     abstract fun onJarVisited(status: Status, jarFile: File): Boolean

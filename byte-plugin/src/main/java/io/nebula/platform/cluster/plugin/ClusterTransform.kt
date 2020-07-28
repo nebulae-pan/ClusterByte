@@ -5,19 +5,16 @@ import com.android.build.api.transform.QualifiedContent
 import com.android.build.api.transform.Status
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
-import com.google.gson.reflect.TypeToken
+import io.nebula.platform.clusterbyte.converter.ClassConverter
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
+import io.nebula.platform.clusterbyte.converter.asm.VisitorChain
 import io.nebula.platform.clusterbyte.core.BaseSingularTransform
 import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
 import io.nebula.platform.clusterbyte.rope.FileVisitor
-import io.nebula.platform.clusterbyte.wrapper.ClusterChain
 import org.apache.commons.io.FileUtils
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassWriter
 import java.io.File
-import java.lang.RuntimeException
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -111,44 +108,39 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
         val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
         val destFile = File(destClassFilePath)
 
-        val iterator = clusterExtension.transforms.iterator()
-        val bytes = file.readBytes()
-        val first = iterator.next()
-        val transform = obtainTransform(first, first.acceptType().cast(null))
+        val transforms = clusterExtension.transforms
+        var bytes = file.readBytes()
+        var preTemporary: Any? = null
+        var consume = false
 
-        val firstTemp = retrieveFactory(first.acceptType()).classConverter().convert(bytes)
-        val chain = constructChain(firstTemp)
-        transform.onClassVisited(status, file, chain)
+        for (i in transforms.indices) {
+            val it = transforms[i]
+            val transform = obtainTransform(it, it.acceptType().cast(null))
+            val temporary = preTemporary ?: findClassConverter(it.acceptType()).convert(bytes)
+            consume = transform.onClassVisited(status, file, temporary) or consume
+            if (consume) {
+                break
+            }
+            if (temporary == null) {
+                throw RuntimeException("transform temporary entity is null, please check it")
+            }
+            if (i < transforms.size - 1 && transforms[i + 1].acceptType() == it.acceptType()) {
+                preTemporary = temporary
+            } else {
+                preTemporary = null
+                val converter = findTemporaryConverter(it.acceptType())
 
-//        while (iterator.hasNext()) {
-//            val transform = iterator.next()
-//            val type = transform.acceptType()
-//            if (chain.piece()?.javaClass == type) {
-//            }
-//            val factory = retrieveFactory(type)
-//            val temp = factory.classConverter().convert(bytes)
-//
-//        }
+                val tempBytes = converter.convert(temporary)
+                    ?: throw RuntimeException("file bytes is empty, please check.")
 
-//
-//        val classReader = ClassReader(file.inputStream())
-//        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-////        val chain = ClusterChain(classWriter)
-//        clusterExtension.transforms.forEach trans@{ transform ->
-//            if (transform.onClassVisited(status, file, chain)) {
-//                return@trans
-//            }
-//        }
-//        if (status == Status.REMOVED) {
-//            if (destFile.exists()) {
-//                FileUtils.forceDelete(destFile)
-//            }
-//        }
-//        classReader.accept(chain.lastVisitor(), ClassReader.EXPAND_FRAMES)
-//        if (!destFile.exists()) {
-//            FileUtils.forceMkdir(destFile.parentFile)
-//        }
-//        destFile.writeBytes(classWriter.toByteArray())
+                bytes = tempBytes
+            }
+        }
+
+        if (!destFile.exists()) {
+            FileUtils.forceMkdir(destFile.parentFile)
+        }
+        destFile.writeBytes(bytes)
     }
 
     override fun getName() = "cluster"
@@ -193,14 +185,10 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
         return set
     }
 
-    private fun <T> constructChain(piece: T): ClusterChain<T> {
-        return ClusterChain(piece)
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun <T> obtainTransform(
         transform: BaseSingularTransform<*>,
-        t: T
+        @Suppress("UNUSED_PARAMETER") t: T
     ): BaseSingularTransform<T> {
         return transform as BaseSingularTransform<T>
     }
@@ -215,5 +203,14 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
             }
         }
         throw RuntimeException("cannot find factory for class:${clazz.name}.")
+    }
+
+    private fun <T> findClassConverter(clazz: Class<T>): ClassConverter<ByteArray, T> {
+        return retrieveFactory(clazz).classConverter()
+    }
+
+    private fun <T> findTemporaryConverter(clazz: Class<T>): ClassConverter<Any, ByteArray?> {
+        @Suppress("UNCHECKED_CAST")
+        return retrieveFactory(clazz).tempConverter() as ClassConverter<Any, ByteArray?>
     }
 }
