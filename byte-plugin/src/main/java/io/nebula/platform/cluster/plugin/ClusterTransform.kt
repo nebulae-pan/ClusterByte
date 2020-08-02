@@ -7,7 +7,6 @@ import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import io.nebula.platform.clusterbyte.converter.ClassConverter
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
-import io.nebula.platform.clusterbyte.converter.asm.VisitorChain
 import io.nebula.platform.clusterbyte.core.BaseSingularTransform
 import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
@@ -29,6 +28,9 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
         val isIncremental = transformInvocation.isIncremental
         if (isIncremental) {
             outputProvider.deleteAll()
+        }
+        clusterExtension.transforms.forEach {
+            it.transform(transformInvocation)
         }
         val inputs = transformInvocation.inputs
         inputs.forEach { input ->
