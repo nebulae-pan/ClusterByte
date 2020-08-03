@@ -1,6 +1,7 @@
 package io.nebula.platform.cluster.plugin
 
 import com.android.build.gradle.BaseExtension
+import io.nebula.platform.clusterbyte.converter.asm.AsmClassNodeConverterFactory
 import io.nebula.platform.clusterbyte.converter.asm.AsmConverterFactory
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import org.gradle.api.Plugin
@@ -16,5 +17,6 @@ class ClusterPlugin : Plugin<Project> {
         androidExtension?.registerTransform(ClusterTransform(clusterExtension))
 
         clusterExtension.registerClassConverterFactory(AsmConverterFactory())
+        clusterExtension.registerClassConverterFactory(AsmClassNodeConverterFactory())
     }
 }
