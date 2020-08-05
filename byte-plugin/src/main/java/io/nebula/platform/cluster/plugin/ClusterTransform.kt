@@ -4,6 +4,7 @@ import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.QualifiedContent
 import com.android.build.api.transform.Status
 import com.android.build.api.transform.TransformInvocation
+import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import io.nebula.platform.clusterbyte.converter.ClassConverter
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
@@ -12,7 +13,9 @@ import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
 import io.nebula.platform.clusterbyte.rope.FileVisitor
+import io.nebula.platform.clusterbyte.rope.Log
 import org.apache.commons.io.FileUtils
+import org.gradle.api.Project
 import java.io.File
 import java.lang.reflect.ParameterizedType
 
@@ -21,7 +24,10 @@ import java.lang.reflect.ParameterizedType
  *
  * date : 2020-07-15 14:50
  */
-class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTransform() {
+class ClusterTransform(
+    private val project: Project,
+    private val clusterExtension: ClusterExtension
+) : BaseTransform() {
     override fun transform(transformInvocation: TransformInvocation?) {
         transformInvocation ?: return
         val outputProvider = transformInvocation.outputProvider
@@ -29,22 +35,34 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
         if (isIncremental) {
             outputProvider.deleteAll()
         }
-        clusterExtension.transforms.forEach {
+        val transforms = clusterExtension.transforms
+        transforms.forEach {
+            it.preTransform(transformInvocation)
             it.transform(transformInvocation)
         }
         val inputs = transformInvocation.inputs
+        val androidExtension = project.extensions.getByName("android") as BaseExtension
+        val androidJar = File(
+            androidExtension.sdkDirectory,
+            "platforms/${androidExtension.compileSdkVersion}/android.jar"
+        )
+        transforms.forEach {
+            it.setProject(project)
+            it.traversalJar(androidJar)
+        }
         inputs.forEach { input ->
             input.directoryInputs.parallelStream().forEach {
-                clusterExtension.transforms.forEach { transform ->
+                transforms.forEach { transform ->
                     transform.traversalDir(it)
                 }
             }
             input.jarInputs.parallelStream().forEach {
-                clusterExtension.transforms.forEach { transform ->
-                    transform.traversalJar(it)
+                transforms.forEach { transform ->
+                    transform.traversalJar(it.file)
                 }
             }
         }
+
         inputs.forEach { input ->
             input.directoryInputs.parallelStream().forEach {
                 val srcPath = it.file.absolutePath
@@ -58,7 +76,7 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
             input.jarInputs.parallelStream().forEach {
                 val destFile = getOutputJar(outputProvider, it)
                 if (isIncremental) {
-                    clusterExtension.transforms.forEach { transform ->
+                    transforms.forEach { transform ->
                         transform.onJarVisited(it.status, it.file)
                     }
                     if (it.status == Status.REMOVED) {
@@ -69,14 +87,17 @@ class ClusterTransform(private val clusterExtension: ClusterExtension) : BaseTra
                         FileUtils.copyFile(it.file, destFile)
                     }
                 } else {
-                    clusterExtension.transforms.forEach { transform ->
+                    transforms.forEach { transform ->
                         transform.onJarVisited(Status.ADDED, it.file)
                     }
                     FileUtils.copyFile(it.file, destFile)
                 }
             }
         }
-
+        //after transform execution
+        transforms.forEach {
+            it.postTransform(transformInvocation)
+        }
     }
 
     private fun processFullBuild(

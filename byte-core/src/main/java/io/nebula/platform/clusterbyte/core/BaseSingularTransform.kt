@@ -2,6 +2,7 @@ package io.nebula.platform.clusterbyte.core
 
 import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
+import org.gradle.api.Project
 import java.io.File
 import java.lang.RuntimeException
 
@@ -10,13 +11,14 @@ import java.lang.RuntimeException
  *
  * date : 2020-07-14 16:30
  */
+@Suppress("unused")
 abstract class BaseSingularTransform<T> : BaseTransform() {
-    private var transformInvocation: TransformInvocation? = null
     private var customOutputDir: File? = null
+    private var project: Project? = null
 
     abstract fun traversalDir(dirInput: DirectoryInput)
 
-    abstract fun traversalJar(jarInput: JarInput)
+    abstract fun traversalJar(jarFile: File)
 
     abstract fun onClassVisited(
         status: Status,
@@ -28,25 +30,38 @@ abstract class BaseSingularTransform<T> : BaseTransform() {
 
     abstract fun acceptType(): Class<T>
 
-    @Synchronized
+    open fun preTransform(transformInvocation: TransformInvocation?) {
+
+    }
+
+    open fun postTransform(transformInvocation: TransformInvocation?) {
+
+    }
+
     fun newOutputClass(fileName: String): File {
-        val transformInvocation = this.transformInvocation
-        transformInvocation
-            ?: throw RuntimeException("please call newOutputClass() when transform() callee")
-        if (customOutputDir == null) {
-            customOutputDir = transformInvocation.outputProvider.getContentLocation(
-                name,
-                TransformManager.CONTENT_CLASS,
-                TransformManager.PROJECT_ONLY,
-                Format.DIRECTORY
-            )
-        }
         return File(customOutputDir, fileName)
     }
 
+    fun setProject(project: Project) {
+        this.project = project
+    }
+
+    open fun buildDir(): File {
+        val p = project ?: throw RuntimeException("project is null")
+        return File(p.buildDir, "cluster/$name")
+    }
+
     override fun transform(transformInvocation: TransformInvocation?) {
-        this.transformInvocation = transformInvocation
-        super.transform(transformInvocation)
+        if (transformInvocation == null) {
+            super.transform(transformInvocation)
+            return
+        }
+        customOutputDir = transformInvocation.outputProvider.getContentLocation(
+            name,
+            TransformManager.CONTENT_CLASS,
+            TransformManager.PROJECT_ONLY,
+            Format.DIRECTORY
+        )
     }
 
     override fun getInputTypes(): MutableSet<QualifiedContent.ContentType> {

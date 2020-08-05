@@ -14,7 +14,7 @@ class ClusterPlugin : Plugin<Project> {
     override fun apply(p: Project) {
         val androidExtension = p.extensions.findByType(BaseExtension::class.java)
         val clusterExtension = p.extensions.create("cluster", ClusterExtension::class.java)
-        androidExtension?.registerTransform(ClusterTransform(clusterExtension))
+        androidExtension?.registerTransform(ClusterTransform(p, clusterExtension))
 
         clusterExtension.registerClassConverterFactory(AsmConverterFactory())
         clusterExtension.registerClassConverterFactory(AsmClassNodeConverterFactory())

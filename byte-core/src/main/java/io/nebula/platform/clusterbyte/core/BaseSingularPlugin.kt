@@ -36,4 +36,20 @@ abstract class BaseSingularPlugin : Plugin<Project> {
     protected fun <T> registerConverterFactory(factory: ConverterFactory<T>) {
         clusterExtension?.registerClassConverterFactory(factory)
     }
+
+    protected fun getTaskNameWithoutModule(name: String): String {
+        return name.substring(name.lastIndexOf(':') + 1)
+    }
+
+    protected fun getTaskModuleName(name: String): String {
+        val index = name.lastIndexOf(':')
+        if (index == -1) {
+            return ""
+        }
+        val str = name.substring(0, index)
+        if (str[0] == ':') {
+            return str.substring(1, str.length)
+        }
+        return str
+    }
 }
