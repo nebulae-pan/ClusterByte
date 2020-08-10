@@ -13,7 +13,6 @@ import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
 import io.nebula.platform.clusterbyte.rope.FileVisitor
-import io.nebula.platform.clusterbyte.rope.Log
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import java.io.File
@@ -32,7 +31,7 @@ class ClusterTransform(
         transformInvocation ?: return
         val outputProvider = transformInvocation.outputProvider
         val isIncremental = transformInvocation.isIncremental
-        if (isIncremental) {
+        if (!isIncremental) {
             outputProvider.deleteAll()
         }
         val transforms = clusterExtension.transforms
@@ -47,7 +46,6 @@ class ClusterTransform(
             "platforms/${androidExtension.compileSdkVersion}/android.jar"
         )
         transforms.forEach {
-            it.setProject(project)
             it.traversalJar(androidJar)
         }
         inputs.forEach { input ->

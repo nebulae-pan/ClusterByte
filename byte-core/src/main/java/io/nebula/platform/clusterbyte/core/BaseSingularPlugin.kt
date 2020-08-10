@@ -2,7 +2,6 @@ package io.nebula.platform.clusterbyte.core
 
 import com.android.build.gradle.BaseExtension
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
-import io.nebula.platform.clusterbyte.converter.asm.AsmConverterFactory
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -14,10 +13,12 @@ import org.gradle.api.Project
 abstract class BaseSingularPlugin : Plugin<Project> {
     protected var androidExtension: BaseExtension? = null
     protected var clusterExtension: ClusterExtension? = null
+    private lateinit var project: Project
 
     override fun apply(p: Project) {
         androidExtension = p.extensions.findByType(BaseExtension::class.java)
         clusterExtension = p.extensions.findByType(ClusterExtension::class.java)
+        project = p
         apply0(p)
     }
 
@@ -26,6 +27,7 @@ abstract class BaseSingularPlugin : Plugin<Project> {
     abstract fun runAlone(): Boolean
 
     protected fun registerTransform(transform: BaseSingularTransform<*>) {
+        transform.setProject(project)
         if (runAlone() || clusterExtension == null) {
             androidExtension?.registerTransform(transform)
             return

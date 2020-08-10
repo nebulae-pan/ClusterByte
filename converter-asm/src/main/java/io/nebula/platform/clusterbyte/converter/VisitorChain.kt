@@ -1,6 +1,6 @@
-package io.nebula.platform.clusterbyte.converter.asm
+package io.nebula.platform.clusterbyte.converter
 
-import io.nebula.platform.clusterbyte.wrapper.SingularClassVisitor
+import io.nebula.platform.clusterbyte.converter.wrapper.SingularClassVisitor
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter

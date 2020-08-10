@@ -1,7 +1,5 @@
-package io.nebula.platform.clusterbyte.converter.asm
+package io.nebula.platform.clusterbyte.converter
 
-import io.nebula.platform.clusterbyte.converter.ClassConverter
-import io.nebula.platform.clusterbyte.converter.ConverterFactory
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 

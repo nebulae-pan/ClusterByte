@@ -4,7 +4,7 @@ import io.nebula.platform.clusterbyte.converter.ConverterFactory
 
 open class ClusterExtension {
     val transforms = arrayListOf<BaseSingularTransform<*>>()
-    var factories = arrayListOf<ConverterFactory<*>>()
+    val factories = hashSetOf<ConverterFactory<*>>()
 
     fun registerRegularTransform(transform: BaseSingularTransform<*>) {
         transforms.add(transform)

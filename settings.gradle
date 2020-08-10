@@ -1,3 +1,5 @@
+include ':converter-javassist'
+include ':converter-asm'
 include ':upload-plugin'
 include ':byte-plugin'
 include ':app', ':byte-core'

@@ -4,10 +4,9 @@ apply plugin: 'io.nebula.upload'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "io.nebula.platform.clusterbyte:core:1.0.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.android.tools.build:gradle:3.5.3'
-    implementation gradleApi()
+    implementation 'org.javassist:javassist:3.27.0-GA'
+    implementation "io.nebula.platform.clusterbyte:core:1.0.0"
 }
 
 upload {
@@ -16,10 +15,11 @@ upload {
     remoteRepo MAVENREPO
     pom {
         groupId 'io.nebula.platform.clusterbyte'
-        artifactId 'plugin'
+        artifactId 'converter-javassist'
         version '1.0.0'
     }
 }
+
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"

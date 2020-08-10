@@ -5,7 +5,6 @@ apply plugin: 'io.nebula.upload'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.tools.build:gradle:3.5.3'
-    implementation 'org.ow2.asm:asm:9.0-beta'
     implementation gradleApi()
     testImplementation 'junit:junit:4.12'
 }
