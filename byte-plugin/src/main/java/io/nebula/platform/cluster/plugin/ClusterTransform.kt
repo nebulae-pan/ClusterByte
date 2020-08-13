@@ -1,9 +1,7 @@
 package io.nebula.platform.cluster.plugin
 
-import com.android.build.api.transform.DirectoryInput
-import com.android.build.api.transform.QualifiedContent
-import com.android.build.api.transform.Status
-import com.android.build.api.transform.TransformInvocation
+import com.android.build.api.transform.*
+import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import io.nebula.platform.clusterbyte.converter.ClassConverter
@@ -17,6 +15,7 @@ import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import java.io.File
 import java.lang.reflect.ParameterizedType
+import java.util.zip.ZipFile
 
 /**
  * @author xinghai.pan
@@ -45,6 +44,7 @@ class ClusterTransform(
             androidExtension.sdkDirectory,
             "platforms/${androidExtension.compileSdkVersion}/android.jar"
         )
+        val isApplication = androidExtension is AppExtension
         transforms.forEach {
             it.traversalJar(androidJar)
         }
@@ -66,29 +66,17 @@ class ClusterTransform(
                 val srcPath = it.file.absolutePath
                 val destPath = getOutputDir(outputProvider, it).absolutePath
                 if (isIncremental) {
-                    processIncremental(it, srcPath, destPath)
+                    processIncrementalDir(it, srcPath, destPath)
                 } else {
-                    processFullBuild(it, srcPath, destPath)
+                    processFullBuildDir(it, srcPath, destPath)
                 }
             }
             input.jarInputs.parallelStream().forEach {
                 val destFile = getOutputJar(outputProvider, it)
                 if (isIncremental) {
-                    transforms.forEach { transform ->
-                        transform.onJarVisited(it.status, it.file)
-                    }
-                    if (it.status == Status.REMOVED) {
-                        if (destFile.exists()) {
-                            FileUtils.forceDelete(destFile)
-                        }
-                    } else {
-                        FileUtils.copyFile(it.file, destFile)
-                    }
+                    processIncrementalJar(isApplication, transforms, it, destFile)
                 } else {
-                    transforms.forEach { transform ->
-                        transform.onJarVisited(Status.ADDED, it.file)
-                    }
-                    FileUtils.copyFile(it.file, destFile)
+                    processFullBuildJar(isApplication, it, transforms, destFile)
                 }
             }
         }
@@ -98,7 +86,79 @@ class ClusterTransform(
         }
     }
 
-    private fun processFullBuild(
+    private fun processFullBuildJar(
+        isApplication: Boolean,
+        jarInput: JarInput,
+        transforms: ArrayList<BaseSingularTransform<*>>,
+        destFile: File
+    ) {
+        if (isApplication
+            && jarInput.scopes.size == 1
+            && jarInput.scopes.contains(QualifiedContent.Scope.SUB_PROJECTS)
+        ) {
+            unzipAndTraverseClasses(jarInput, Status.ADDED, destFile)
+        } else {
+            transforms.forEach { transform ->
+                transform.onJarVisited(Status.ADDED, jarInput.file)
+            }
+            FileUtils.copyFile(jarInput.file, destFile)
+        }
+    }
+
+    private fun unzipAndTraverseClasses(
+        jarInput: JarInput,
+        status: Status,
+        destFile: File
+    ) {
+
+        val zip = ZipFile(jarInput.file)
+        zip.entries().iterator().forEach {
+            if (!it.name.endsWith(".class")) {
+                return@forEach
+            }
+            zip.getInputStream(it).use { input ->
+                val bytes = transformsDeliverBytes(input.readBytes(), status)
+                //bytes is null, transform consume it, shouldn't deliver this file to next transform flow
+                if (bytes == null) {
+                    if (destFile.exists()) {
+                        FileUtils.forceDelete(destFile)
+                    }
+                } else {
+                    if (!destFile.exists()) {
+                        FileUtils.forceMkdir(destFile.parentFile)
+                    }
+                    destFile.writeBytes(bytes)
+                }
+            }
+        }
+    }
+
+    private fun processIncrementalJar(
+        isApplication: Boolean,
+        transforms: ArrayList<BaseSingularTransform<*>>,
+        jarInput: JarInput,
+        destFile: File
+    ) {
+        if (isApplication
+            && jarInput.scopes.size == 1
+            && jarInput.scopes.contains(QualifiedContent.Scope.SUB_PROJECTS)
+        ) {
+            unzipAndTraverseClasses(jarInput, jarInput.status, destFile)
+        } else {
+            transforms.forEach { transform ->
+                transform.onJarVisited(jarInput.status, jarInput.file)
+            }
+            if (jarInput.status == Status.REMOVED) {
+                if (destFile.exists()) {
+                    FileUtils.forceDelete(destFile)
+                }
+            } else {
+                FileUtils.copyFile(jarInput.file, destFile)
+            }
+        }
+    }
+
+    private fun processFullBuildDir(
         it: DirectoryInput,
         srcPath: String,
         destPath: String
@@ -110,7 +170,7 @@ class ClusterTransform(
         })
     }
 
-    private fun processIncremental(
+    private fun processIncrementalDir(
         it: DirectoryInput,
         srcPath: String,
         destPath: String
@@ -129,8 +189,30 @@ class ClusterTransform(
         val destClassFilePath = file.absolutePath.replace(srcPath, destPath)
         val destFile = File(destClassFilePath)
 
+        var bytes: ByteArray? = file.readBytes()
+        bytes = transformsDeliverBytes(bytes, status)
+        //bytes is null, transform consume it, shouldn't deliver this file to next transform flow
+        if (bytes == null) {
+            if (destFile.exists()) {
+                FileUtils.forceDelete(destFile)
+            }
+        } else {
+            if (!destFile.exists()) {
+                FileUtils.forceMkdir(destFile.parentFile)
+            }
+            destFile.writeBytes(bytes)
+        }
+    }
+
+    private fun transformsDeliverBytes(
+        bytes: ByteArray?,
+        status: Status
+    ): ByteArray? {
+        if (bytes == null) {
+            return null
+        }
+        var resultBytes: ByteArray? = null
         val transforms = clusterExtension.transforms
-        var bytes = file.readBytes()
         var preTemporary: Any? = null
         var consume = false
 
@@ -138,8 +220,9 @@ class ClusterTransform(
             val it = transforms[i]
             val transform = obtainTransform(it, it.acceptType().cast(null))
             val temporary = preTemporary ?: findClassConverter(it.acceptType()).convert(bytes)
-            consume = transform.onClassVisited(status, file, temporary) or consume
+            consume = transform.onClassVisited(status, temporary) or consume
             if (consume) {
+                resultBytes = null
                 break
             }
             if (temporary == null) {
@@ -154,14 +237,10 @@ class ClusterTransform(
                 val tempBytes = converter.convert(temporary)
                     ?: throw RuntimeException("file bytes is empty, please check.")
 
-                bytes = tempBytes
+                resultBytes = tempBytes
             }
         }
-
-        if (!destFile.exists()) {
-            FileUtils.forceMkdir(destFile.parentFile)
-        }
-        destFile.writeBytes(bytes)
+        return resultBytes
     }
 
     override fun getName() = "cluster"

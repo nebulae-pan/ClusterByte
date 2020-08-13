@@ -1,13 +1,13 @@
 package io.nebula.platform.clusterbyte.converter.wrapper
 
+import io.nebula.platform.clusterbyte.converter.DEFAULT_ASM_CODE
 import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.Opcodes
 
 /**
  * Created by nebula on 2020-07-19
  */
 abstract class SingularClassVisitor : ClassVisitor {
-    constructor() : super(Opcodes.ASM7)
+    constructor() : super(DEFAULT_ASM_CODE)
 
-    constructor(visitor: ClassVisitor) : super(Opcodes.ASM7, visitor)
+    constructor(visitor: ClassVisitor) : super(DEFAULT_ASM_CODE, visitor)
 }

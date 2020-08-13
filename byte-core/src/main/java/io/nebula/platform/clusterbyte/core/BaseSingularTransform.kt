@@ -22,7 +22,6 @@ abstract class BaseSingularTransform<T> : BaseTransform() {
 
     abstract fun onClassVisited(
         status: Status,
-        classFile: File,
         classEntity: T
     ): Boolean
 
