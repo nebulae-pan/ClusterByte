@@ -26,6 +26,7 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
         clusterExtension = p.extensions.findByType(ClusterExtension::class.java)
         project = p
         extension = objectFactory().newInstance(reflectForExtensionType())
+        project.extensions.add(extension.closureName, extension)
         apply0(p)
     }
 
