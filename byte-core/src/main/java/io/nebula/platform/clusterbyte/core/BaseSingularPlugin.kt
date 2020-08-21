@@ -3,6 +3,7 @@ package io.nebula.platform.clusterbyte.core
 import com.android.build.gradle.BaseExtension
 import com.google.common.reflect.TypeToken
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
+import org.apache.http.util.TextUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
@@ -25,8 +26,10 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
         androidExtension = p.extensions.findByType(BaseExtension::class.java)
         clusterExtension = p.extensions.findByType(ClusterExtension::class.java)
         project = p
-        extension = objectFactory().newInstance(reflectForExtensionType())
-        project.extensions.add(extension.closureName, extension)
+        extension = getObjectFactory().newInstance(reflectForExtensionType())
+        if (!TextUtils.isEmpty(extension.closureName)) {
+            project.extensions.add(extension.closureName, extension)
+        }
         apply0(p)
     }
 
@@ -64,7 +67,7 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
     }
 
     @Inject
-    fun objectFactory(): ObjectFactory {
+    open fun getObjectFactory(): ObjectFactory {
         throw NotImplementedException()
     }
 
