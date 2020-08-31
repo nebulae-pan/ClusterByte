@@ -1,5 +1,7 @@
 package io.nebula.platform.clusterbyte.core
 
+import org.gradle.api.Project
+
 /**
  * @author xinghai.pan
  *
@@ -7,4 +9,10 @@ package io.nebula.platform.clusterbyte.core
  */
 abstract class BaseSingularExtension {
     abstract var closureName: String
+
+    protected lateinit var project: Project
+
+    fun setParams(project: Project) {
+        this.project = project
+    }
 }

@@ -26,7 +26,8 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
         androidExtension = p.extensions.findByType(BaseExtension::class.java)
         clusterExtension = p.extensions.findByType(ClusterExtension::class.java)
         project = p
-        extension = getObjectFactory().newInstance(reflectForExtensionType())
+        extension = createExtension(reflectForExtensionType())
+        extension.setParams(p)
         if (!TextUtils.isEmpty(extension.closureName)) {
             project.extensions.add(extension.closureName, extension)
         }
@@ -36,6 +37,10 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
     abstract fun apply0(p: Project)
 
     abstract fun runAlone(): Boolean
+
+    open fun createExtension(clazz: Class<E>): E {
+        return getObjectFactory().newInstance(clazz)
+    }
 
     protected fun registerTransform(transform: BaseSingularTransform<*>) {
         transform.setProject(project)
