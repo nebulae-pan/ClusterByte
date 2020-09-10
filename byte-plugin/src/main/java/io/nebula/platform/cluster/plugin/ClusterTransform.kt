@@ -176,7 +176,9 @@ class ClusterTransform(
         destPath: String
     ) {
         it.changedFiles.forEach { (file, status) ->
-            transformClassVisitor(file, srcPath, destPath, status)
+            if (status != Status.REMOVED && file.isFile) {
+                transformClassVisitor(file, srcPath, destPath, status)
+            }
         }
     }
 
