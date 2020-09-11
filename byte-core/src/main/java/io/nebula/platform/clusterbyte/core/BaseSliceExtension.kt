@@ -7,7 +7,7 @@ import org.gradle.api.Project
  *
  * date : 2020-07-15 14:50
  */
-abstract class BaseSingularExtension {
+abstract class BaseSliceExtension {
     abstract var closureName: String
 
     protected lateinit var project: Project

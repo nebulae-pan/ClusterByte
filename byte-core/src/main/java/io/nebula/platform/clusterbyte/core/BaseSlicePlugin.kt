@@ -15,7 +15,7 @@ import javax.inject.Inject
  *
  * date : 2020-07-14 16:50
  */
-abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
+abstract class BaseSlicePlugin<E : BaseSliceExtension> : Plugin<Project> {
     protected var androidExtension: BaseExtension? = null
     protected var clusterExtension: ClusterExtension? = null
     protected lateinit var extension: E
@@ -42,7 +42,7 @@ abstract class BaseSingularPlugin<E : BaseSingularExtension> : Plugin<Project> {
         return getObjectFactory().newInstance(clazz)
     }
 
-    protected fun registerTransform(transform: BaseSingularTransform<*>) {
+    protected fun registerTransform(transform: BaseSliceTransform<*>) {
         transform.setProject(project)
         if (runAlone() || clusterExtension == null) {
             androidExtension?.registerTransform(transform)

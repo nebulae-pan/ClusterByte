@@ -12,7 +12,7 @@ import java.lang.RuntimeException
  * date : 2020-07-14 16:30
  */
 @Suppress("unused")
-abstract class BaseSingularTransform<T> : BaseTransform() {
+abstract class BaseSliceTransform<T> : BaseTransform() {
     private var customOutputDir: File? = null
     private var project: Project? = null
 

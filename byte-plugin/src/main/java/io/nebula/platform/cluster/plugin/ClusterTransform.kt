@@ -6,7 +6,7 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import io.nebula.platform.clusterbyte.converter.ClassConverter
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
-import io.nebula.platform.clusterbyte.core.BaseSingularTransform
+import io.nebula.platform.clusterbyte.core.BaseSliceTransform
 import io.nebula.platform.clusterbyte.core.BaseTransform
 import io.nebula.platform.clusterbyte.core.ClusterExtension
 import io.nebula.platform.clusterbyte.rope.ClassTraverse
@@ -72,11 +72,17 @@ class ClusterTransform(
                 }
             }
             input.jarInputs.parallelStream().forEach {
-                val destFile = getOutputJar(outputProvider, it)
+                val destJar = getOutputJar(outputProvider, it)
+                val destDir = outputProvider.getContentLocation(
+                    it.name + "expanded",
+                    it.contentTypes,
+                    it.scopes,
+                    Format.DIRECTORY
+                )
                 if (isIncremental) {
-                    processIncrementalJar(isApplication, transforms, it, destFile)
+                    processIncrementalJar(isApplication, transforms, it, destJar, destDir)
                 } else {
-                    processFullBuildJar(isApplication, it, transforms, destFile)
+                    processFullBuildJar(isApplication, it, transforms, destJar, destDir)
                 }
             }
         }
@@ -89,26 +95,53 @@ class ClusterTransform(
     private fun processFullBuildJar(
         isApplication: Boolean,
         jarInput: JarInput,
-        transforms: ArrayList<BaseSingularTransform<*>>,
-        destFile: File
+        transforms: ArrayList<BaseSliceTransform<*>>,
+        destJar: File,
+        destDir: File
     ) {
         if (isApplication
             && jarInput.scopes.size == 1
             && jarInput.scopes.contains(QualifiedContent.Scope.SUB_PROJECTS)
         ) {
-            unzipAndTraverseClasses(jarInput, Status.ADDED, destFile)
+            unzipAndTraverseClasses(jarInput, Status.ADDED, destDir)
         } else {
             transforms.forEach { transform ->
                 transform.onJarVisited(Status.ADDED, jarInput.file)
             }
-            FileUtils.copyFile(jarInput.file, destFile)
+            FileUtils.copyFile(jarInput.file, destJar)
+        }
+    }
+
+    private fun processIncrementalJar(
+        isApplication: Boolean,
+        transforms: ArrayList<BaseSliceTransform<*>>,
+        jarInput: JarInput,
+        destJar: File,
+        destDir: File
+    ) {
+        if (isApplication
+            && jarInput.scopes.size == 1
+            && jarInput.scopes.contains(QualifiedContent.Scope.SUB_PROJECTS)
+        ) {
+            unzipAndTraverseClasses(jarInput, jarInput.status, destDir)
+        } else {
+            transforms.forEach { transform ->
+                transform.onJarVisited(jarInput.status, jarInput.file)
+            }
+            if (jarInput.status == Status.REMOVED) {
+                if (destJar.exists()) {
+                    FileUtils.forceDelete(destJar)
+                }
+            } else {
+                FileUtils.copyFile(jarInput.file, destJar)
+            }
         }
     }
 
     private fun unzipAndTraverseClasses(
         jarInput: JarInput,
         status: Status,
-        destFile: File
+        destDir: File
     ) {
 
         val zip = ZipFile(jarInput.file)
@@ -116,44 +149,20 @@ class ClusterTransform(
             if (!it.name.endsWith(".class")) {
                 return@forEach
             }
+            val classFile = File(destDir, it.name)
             zip.getInputStream(it).use { input ->
                 val bytes = transformsDeliverBytes(input.readBytes(), status)
                 //bytes is null, transform consume it, shouldn't deliver this file to next transform flow
                 if (bytes == null) {
-                    if (destFile.exists()) {
-                        FileUtils.forceDelete(destFile)
+                    if (classFile.exists()) {
+                        FileUtils.forceDelete(classFile)
                     }
                 } else {
-                    if (!destFile.exists()) {
-                        FileUtils.forceMkdir(destFile.parentFile)
+                    if (!classFile.exists()) {
+                        FileUtils.forceMkdir(classFile.parentFile)
                     }
-                    destFile.writeBytes(bytes)
+                    classFile.writeBytes(bytes)
                 }
-            }
-        }
-    }
-
-    private fun processIncrementalJar(
-        isApplication: Boolean,
-        transforms: ArrayList<BaseSingularTransform<*>>,
-        jarInput: JarInput,
-        destFile: File
-    ) {
-        if (isApplication
-            && jarInput.scopes.size == 1
-            && jarInput.scopes.contains(QualifiedContent.Scope.SUB_PROJECTS)
-        ) {
-            unzipAndTraverseClasses(jarInput, jarInput.status, destFile)
-        } else {
-            transforms.forEach { transform ->
-                transform.onJarVisited(jarInput.status, jarInput.file)
-            }
-            if (jarInput.status == Status.REMOVED) {
-                if (destFile.exists()) {
-                    FileUtils.forceDelete(destFile)
-                }
-            } else {
-                FileUtils.copyFile(jarInput.file, destFile)
             }
         }
     }
@@ -289,10 +298,10 @@ class ClusterTransform(
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> obtainTransform(
-        transform: BaseSingularTransform<*>,
+        transform: BaseSliceTransform<*>,
         @Suppress("UNUSED_PARAMETER") t: T
-    ): BaseSingularTransform<T> {
-        return transform as BaseSingularTransform<T>
+    ): BaseSliceTransform<T> {
+        return transform as BaseSliceTransform<T>
     }
 
     @Suppress("UNCHECKED_CAST")
