@@ -11,10 +11,14 @@ package io.nebula.platform.clusterbyte.rope
  * date : 2019-07-18 10:34
  * @author panxinghai
  */
-object Log {
-    var level = 5
+class Log private constructor(private val defaultTag: String) {
+    companion object {
+        fun instance(defaultTag: String): Log {
+            return Log(defaultTag)
+        }
+    }
 
-    private const val defaultTag = "[cluster]"
+    var level = 5
 
     fun e(tag: String, msg: String) {
         doErrorLog(1, tag, msg)
@@ -67,13 +71,13 @@ object Log {
     }
 
     private fun doNormalLog(level: Int, tag: String = defaultTag, msg: String) {
-        if (level <= Log.level) {
+        if (level <= this.level) {
             println("$tag: $msg")
         }
     }
 
     private fun doErrorLog(level: Int, tag: String = defaultTag, msg: String) {
-        if (level <= level) {
+        if (level <= this.level) {
             System.err.println("$tag $msg")
         }
     }
