@@ -17,15 +17,15 @@ class MavenUploadPlugin : Plugin<ProjectInternal> {
         loadLocalProperties(project)
         val extension = project.extensions.create("upload", UploadExtension::class.java)
 
-        if (!isUploadTask(project)) {
-            return
-        }
         val task = project.tasks.getByName("uploadArchives") as Upload
         val repoHandler = task.repositories as HasConvention
         val convention =
             repoHandler.convention.plugins["maven"] as DefaultMavenRepositoryHandlerConvention
 
-        project.afterEvaluate {
+        project.gradle.taskGraph.whenReady {
+            if (!project.gradle.taskGraph.allTasks.contains(task)) {
+                return@whenReady
+            }
             val url = if (extension.local) extension.localRepo else extension.remoteRepo
             if (url.isEmpty()) {
                 throw IllegalArgumentException("upload.remoteRepo is not config.")

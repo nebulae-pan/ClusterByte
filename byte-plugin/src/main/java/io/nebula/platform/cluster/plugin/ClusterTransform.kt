@@ -105,10 +105,16 @@ class ClusterTransform(
         ) {
             unzipAndTraverseClasses(jarInput, Status.ADDED, destDir)
         } else {
+            var consume = false
             transforms.forEach { transform ->
-                transform.onJarVisited(Status.ADDED, jarInput.file)
+                consume = transform.onJarVisited(Status.ADDED, jarInput.file)
+                if (consume) {
+                    return@forEach
+                }
             }
-            FileUtils.copyFile(jarInput.file, destJar)
+            if (!consume) {
+                FileUtils.copyFile(jarInput.file, destJar)
+            }
         }
     }
 
@@ -125,10 +131,14 @@ class ClusterTransform(
         ) {
             unzipAndTraverseClasses(jarInput, jarInput.status, destDir)
         } else {
+            var consume = false
             transforms.forEach { transform ->
-                transform.onJarVisited(jarInput.status, jarInput.file)
+                consume = transform.onJarVisited(jarInput.status, jarInput.file)
+                if (consume) {
+                    return@forEach
+                }
             }
-            if (jarInput.status == Status.REMOVED) {
+            if (consume || jarInput.status == Status.REMOVED) {
                 if (destJar.exists()) {
                     FileUtils.forceDelete(destJar)
                 }

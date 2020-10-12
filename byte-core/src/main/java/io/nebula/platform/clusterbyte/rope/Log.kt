@@ -2,11 +2,11 @@ package io.nebula.platform.clusterbyte.rope
 
 /**
  * level :
- * 1.error info
- * 2.warning info
- * 3.information of plugin process, you can see the task or action's execution progress
- * 4.detail of all task, it maybe great amount
- * 5.some unnecessary log
+ * 1. log.e(): error info
+ * 2. log.w(): warning info
+ * 3. log.p(): information of plugin process, you can see the task or action's execution progress
+ * 4. log.d(): detail of all task, it maybe great amount
+ * 5. log.i(): some unnecessary log
  *
  * date : 2019-07-18 10:34
  * @author panxinghai
