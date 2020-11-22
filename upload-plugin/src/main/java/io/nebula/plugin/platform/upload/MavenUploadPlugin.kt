@@ -15,7 +15,7 @@ class MavenUploadPlugin : Plugin<ProjectInternal> {
     override fun apply(project: ProjectInternal) {
         project.pluginManager.apply("maven")
         loadLocalProperties(project)
-        val extension = project.extensions.create("upload", UploadExtension::class.java)
+        val extension = project.extensions.create("upload", UploadExtension::class.java, project)
 
         val task = project.tasks.getByName("uploadArchives") as Upload
         val repoHandler = task.repositories as HasConvention
@@ -26,30 +26,30 @@ class MavenUploadPlugin : Plugin<ProjectInternal> {
             if (!project.gradle.taskGraph.allTasks.contains(task)) {
                 return@whenReady
             }
-            val url = if (extension.local) extension.localRepo else extension.remoteRepo
-            if (url.isEmpty()) {
-                throw IllegalArgumentException("upload.remoteRepo is not config.")
-            }
-
-            if (!extension.local) {
-                println("INFO:upload ${project.name} to remote:${project.uri(url)}? Y/N ")
-                println("input:")
-                val input = readLine()
-                if (input?.toLowerCase(Locale.getDefault()) != "y") {
-                    throw RuntimeException("user terminate gradle build.")
-                }
-            }
-            convention.mavenDeployer {
-                val remote = MavenRemoteRepository()
-                remote.url = project.uri(url).toString()
-                it.name = "mavenDeployer"
-                it.repository = remote
-                it.pom.apply {
-                    groupId = extension.pom.groupId
-                    artifactId = extension.pom.artifactId
-                    version = extension.pom.version
-                }
-            }
+//            val url = if (extension.local) extension.localRepo else extension.remoteRepo
+//            if (url.isEmpty()) {
+//                throw IllegalArgumentException("upload.remoteRepo is not config.")
+//            }
+//
+//            if (!extension.local) {
+//                println("INFO:upload ${project.name} to remote:${project.uri(url)}? Y/N ")
+//                println("input:")
+//                val input = readLine()
+//                if (input?.toLowerCase(Locale.getDefault()) != "y") {
+//                    throw RuntimeException("user terminate gradle build.")
+//                }
+//            }
+//            convention.mavenDeployer {
+//                val remote = MavenRemoteRepository()
+//                remote.url = project.uri(url).toString()
+//                it.name = "mavenDeployer"
+//                it.repository = remote
+//                it.pom.apply {
+//                    groupId = extension.pom.groupId
+//                    artifactId = extension.pom.artifactId
+//                    version = extension.pom.version
+//                }
+//            }
         }
     }
 
