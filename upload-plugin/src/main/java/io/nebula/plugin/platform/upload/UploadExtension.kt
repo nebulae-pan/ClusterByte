@@ -11,14 +11,21 @@ import org.gradle.api.Project
  * date : 2020-07-24 16:18
  */
 open class UploadExtension(project: Project) {
-    private val container =
+    val pom: PomExtension = PomExtension()
+
+    val repositories: NamedDomainObjectContainer<Repository> =
         project.container(Repository::class.java) {
             val repo = project.objects.newInstance(Repository::class.java)
             repo.name = it
             repo
         }
 
+    fun pom(action: Action<PomExtension>) {
+        val pom = this.pom
+        action.execute(pom)
+    }
+
     fun repositories(action: Action<NamedDomainObjectContainer<Repository>>) {
-        action.execute(container)
+        action.execute(repositories)
     }
 }

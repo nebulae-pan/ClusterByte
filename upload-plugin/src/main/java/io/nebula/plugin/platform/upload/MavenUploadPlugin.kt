@@ -1,5 +1,6 @@
 package io.nebula.plugin.platform.upload
 
+import com.android.build.gradle.internal.tasks.factory.registerTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.HasConvention
@@ -17,49 +18,47 @@ class MavenUploadPlugin : Plugin<ProjectInternal> {
         loadLocalProperties(project)
         val extension = project.extensions.create("upload", UploadExtension::class.java, project)
 
-        val task = project.tasks.getByName("uploadArchives") as Upload
-        val repoHandler = task.repositories as HasConvention
+        val uploadTask = project.tasks.getByName("uploadArchives") as Upload
+        val repoHandler = uploadTask.repositories as HasConvention
         val convention =
             repoHandler.convention.plugins["maven"] as DefaultMavenRepositoryHandlerConvention
 
-        project.gradle.taskGraph.whenReady {
-            if (!project.gradle.taskGraph.allTasks.contains(task)) {
-                return@whenReady
+        val publishTasks = arrayListOf<PublishTask>()
+        project.afterEvaluate {
+            extension.repositories.forEach {
+                val task = project.tasks.registerTask(
+                    PublishTask.Action(
+                        it.name.toLowerCase().capitalize()
+                    )
+                )
+                val realTask = task.get()
+                realTask.dependsOn(uploadTask)
+                publishTasks.add(realTask)
             }
-//            val url = if (extension.local) extension.localRepo else extension.remoteRepo
-//            if (url.isEmpty()) {
-//                throw IllegalArgumentException("upload.remoteRepo is not config.")
-//            }
-//
-//            if (!extension.local) {
-//                println("INFO:upload ${project.name} to remote:${project.uri(url)}? Y/N ")
-//                println("input:")
-//                val input = readLine()
-//                if (input?.toLowerCase(Locale.getDefault()) != "y") {
-//                    throw RuntimeException("user terminate gradle build.")
-//                }
-//            }
-//            convention.mavenDeployer {
-//                val remote = MavenRemoteRepository()
-//                remote.url = project.uri(url).toString()
-//                it.name = "mavenDeployer"
-//                it.repository = remote
-//                it.pom.apply {
-//                    groupId = extension.pom.groupId
-//                    artifactId = extension.pom.artifactId
-//                    version = extension.pom.version
-//                }
-//            }
         }
-    }
 
-    private fun isUploadTask(project: ProjectInternal): Boolean {
-        project.gradle.startParameter.taskNames.forEach {
-            if (it.contains("uploadArchives")) {
-                return true
+        project.gradle.taskGraph.whenReady {
+            publishTasks.forEach {
+                if (!project.gradle.taskGraph.allTasks.contains(it)) {
+                    return@forEach
+                }
+                val repo = extension.repositories.findByName(it.repoName.toLowerCase())
+                    ?: return@whenReady
+                convention.mavenDeployer { deployer ->
+                    val remote = MavenRemoteRepository()
+                    val url = project.uri(repo.url).toString()
+                    remote.url = url
+                    println("depolyer to: $url")
+                    deployer.name = "mavenDeployer"
+                    deployer.repository = remote
+                    deployer.pom.apply {
+                        groupId = extension.pom.groupId
+                        artifactId = extension.pom.artifactId
+                        version = extension.pom.version
+                    }
+                }
             }
         }
-        return false
     }
 
     private fun loadLocalProperties(project: Project) {

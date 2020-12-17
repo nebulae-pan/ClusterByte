@@ -10,9 +10,6 @@ dependencies {
 }
 
 upload {
-    local true
-    localRepo LOCALREPO
-    remoteRepo MAVENREPO
     pom {
         groupId 'io.nebula.platform.clusterbyte'
         artifactId 'core'
