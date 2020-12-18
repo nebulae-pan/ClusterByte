@@ -5,7 +5,7 @@ package io.nebula.plugin.platform.upload
  *
  * date : 2020-07-27 15:57
  */
-class PomExtension {
+class PomExtension() {
     var groupId: String = ""
     var artifactId: String = ""
     var version: String = ""

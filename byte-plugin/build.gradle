@@ -1,6 +1,17 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
-apply plugin: 'io.nebula.upload'
+
+if (!project.gradle.startParameter.taskNames.contains("upload-plugin:uploadArchives")) {
+    apply plugin: 'io.nebula.upload'
+
+    upload {
+        pom {
+            groupId 'io.nebula.platform.clusterbyte'
+            artifactId 'plugin'
+            version '1.0.0'
+        }
+    }
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -10,13 +21,6 @@ dependencies {
     implementation gradleApi()
 }
 
-upload {
-    pom {
-        groupId 'io.nebula.platform.clusterbyte'
-        artifactId 'plugin'
-        version '1.0.0'
-    }
-}
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"

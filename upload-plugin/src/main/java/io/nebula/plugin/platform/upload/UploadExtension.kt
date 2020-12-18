@@ -2,7 +2,6 @@ package io.nebula.plugin.platform.upload
 
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.NamedDomainObjectFactory
 import org.gradle.api.Project
 
 /**
@@ -20,6 +19,8 @@ open class UploadExtension(project: Project) {
             repo
         }
 
+    val substitutions = hashMapOf<String, String>()
+
     fun pom(action: Action<PomExtension>) {
         val pom = this.pom
         action.execute(pom)
@@ -27,5 +28,9 @@ open class UploadExtension(project: Project) {
 
     fun repositories(action: Action<NamedDomainObjectContainer<Repository>>) {
         action.execute(repositories)
+    }
+
+    fun substitute(projectName: String, moduleName: String) {
+        substitutions[projectName] = moduleName
     }
 }
