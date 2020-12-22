@@ -2,6 +2,7 @@ package io.nebula.platform.clusterbyte.core
 
 import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
+import com.google.common.reflect.TypeToken
 import org.gradle.api.Project
 import java.io.File
 import java.lang.RuntimeException
@@ -27,7 +28,9 @@ abstract class BaseSliceTransform<T> : BaseTransform() {
 
     abstract fun onJarVisited(status: Status, jarFile: File): Boolean
 
-    abstract fun acceptType(): Class<T>
+    fun acceptType(): Class<T> {
+        return object : TypeToken<T>(javaClass) {}.rawType as Class<T>
+    }
 
     open fun preTransform(transformInvocation: TransformInvocation?) {
 

@@ -1,22 +1,11 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
-if (!project.gradle.startParameter.taskNames.contains("upload-plugin:uploadArchives")) {
-    apply plugin: 'io.nebula.upload'
-
-    upload {
-        pom {
-            groupId 'io.nebula.platform.clusterbyte'
-            artifactId 'converter-asm'
-            version '1.0.0'
-        }
-    }
-}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'org.ow2.asm:asm:9.0-beta'
     implementation 'org.ow2.asm:asm-tree:9.0-beta'
-    implementation "io.nebula.platform.clusterbyte:core:1.0.0"
+    implementation project(":byte-core")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 

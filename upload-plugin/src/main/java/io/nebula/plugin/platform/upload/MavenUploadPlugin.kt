@@ -56,7 +56,7 @@ class MavenUploadPlugin : Plugin<ProjectInternal> {
                 val remote = MavenRemoteRepository()
                 val url = project.uri(repo.url).toString()
                 remote.url = url
-                println("depolyer to: $url")
+                println("deploy to: $url")
                 deployer.repository = remote
                 deployer.pom.whenConfigured { pom ->
                     val newDependencies = arrayListOf<Any?>()
