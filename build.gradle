@@ -52,6 +52,9 @@ subprojects { subProject ->
         it.repositories {
             local {
                 url LOCALREPO
+                it.pom {
+                    it.version "1.0.0-betabeta"
+                }
             }
             remote {
                 url MAVENREPO
