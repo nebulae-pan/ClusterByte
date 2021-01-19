@@ -3,8 +3,8 @@ apply plugin: 'kotlin'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'org.ow2.asm:asm:9.0-beta'
-    implementation 'org.ow2.asm:asm-tree:9.0-beta'
+    api 'org.ow2.asm:asm:9.0-beta'
+    api 'org.ow2.asm:asm-tree:9.0-beta'
     implementation project(":byte-core")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

@@ -2,6 +2,7 @@ package io.nebula.platform.clusterbyte.core
 
 import com.android.build.gradle.BaseExtension
 import com.google.common.reflect.TypeToken
+import io.nebula.platform.clusterbyte.converter.ClassConverter
 import io.nebula.platform.clusterbyte.converter.ConverterFactory
 import org.apache.http.util.TextUtils
 import org.gradle.api.Plugin
@@ -31,6 +32,24 @@ abstract class BaseSlicePlugin<E : BaseSliceExtension> : Plugin<Project> {
         if (!TextUtils.isEmpty(extension.closureName)) {
             project.extensions.add(extension.closureName, extension)
         }
+        clusterExtension?.registerClassConverterFactory(object : ConverterFactory<ByteArray> {
+            override fun classConverter(): ClassConverter<ByteArray, ByteArray> {
+                return object : ClassConverter<ByteArray, ByteArray> {
+                    override fun convert(t: ByteArray): ByteArray {
+                        return t
+                    }
+                }
+            }
+
+            override fun tempConverter(): ClassConverter<ByteArray, ByteArray?> {
+                return object : ClassConverter<ByteArray, ByteArray?> {
+                    override fun convert(t: ByteArray): ByteArray {
+                        return t
+                    }
+                }
+            }
+
+        })
         apply0(p)
     }
 
