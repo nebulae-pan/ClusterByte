@@ -108,4 +108,4 @@ interface ConverterFactory<T> {
 
 ### 注意事项
 - SliceTransform的visitor方法都会被并发调用，注意处理好多线程问题
-- 框架最新版本基于agp 3.5.3开发
+- 框架最新版本(1.3.0)基于agp 3.6.4开发

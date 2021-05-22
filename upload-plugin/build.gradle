@@ -6,7 +6,7 @@ apply from: '../script/upload.gradle'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    api 'com.android.tools.build:gradle:3.5.3'
+    api 'com.android.tools.build:gradle:3.6.4'
     implementation localGroovy()
     //gradle sdk
     implementation gradleApi()

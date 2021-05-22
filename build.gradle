@@ -20,7 +20,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath 'com.android.tools.build:gradle:3.6.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         if (!project.gradle.startParameter.taskNames.contains(":upload-plugin:uploadArchives")) {
             classpath "io.nebula.platform.plugin:upload:1.0.0-test"
