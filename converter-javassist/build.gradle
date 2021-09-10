@@ -4,8 +4,10 @@ apply plugin: 'kotlin'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":byte-core")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     api 'org.javassist:javassist:3.27.0-GA'
+    compileOnly 'com.android.tools.build:gradle:3.6.4'
+    compileOnly gradleApi()
 }
 
 

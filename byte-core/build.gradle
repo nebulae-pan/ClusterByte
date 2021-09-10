@@ -3,8 +3,8 @@ apply plugin: 'kotlin'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    api 'com.android.tools.build:gradle:3.5.3'
-    implementation gradleApi()
+    compileOnly 'com.android.tools.build:gradle:3.6.4'
+    compileOnly gradleApi()
     testImplementation 'junit:junit:4.13.1'
 }
 

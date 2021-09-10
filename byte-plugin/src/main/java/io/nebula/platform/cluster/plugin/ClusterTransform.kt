@@ -232,15 +232,18 @@ class ClusterTransform(
         if (bytes == null) {
             return null
         }
-        var resultBytes: ByteArray? = null
+        var resultBytes: ByteArray? = bytes
         val transforms = clusterExtension.transforms
         var preTemporary: Any? = null
         var consume = false
 
         for (i in transforms.indices) {
+            if (resultBytes == null) {
+                return null
+            }
             val it = transforms[i]
             val transform = obtainTransform(it, it.acceptType().cast(null))
-            val temporary = preTemporary ?: findClassConverter(it.acceptType()).convert(bytes)
+            val temporary = preTemporary ?: findClassConverter(it.acceptType()).convert(resultBytes)
             consume = transform.onClassVisited(status, temporary) or consume
             if (consume) {
                 resultBytes = null
