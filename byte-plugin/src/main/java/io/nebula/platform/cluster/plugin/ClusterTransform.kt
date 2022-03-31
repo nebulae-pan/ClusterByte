@@ -175,6 +175,7 @@ class ClusterTransform(
                 }
             }
         }
+        zip.close()
     }
 
     private fun processFullBuildDir(
@@ -273,7 +274,7 @@ class ClusterTransform(
         val transforms = clusterExtension.transforms
         val set = mutableSetOf<QualifiedContent.ContentType>()
         transforms.forEach {
-            set.union(it.inputTypes)
+            set.addAll(it.inputTypes)
         }
         if (set.isEmpty()) {
             return TransformManager.CONTENT_JARS
@@ -290,8 +291,8 @@ class ClusterTransform(
         //gather all clustered transform's configuration
         val transforms = clusterExtension.transforms
         val set = mutableSetOf<QualifiedContent.Scope>()
-        transforms.forEach {
-            set.union(it.scopes)
+        transforms.forEach { transform ->
+            set.addAll(transform.scopes.map { it as QualifiedContent.Scope })
         }
         if (set.isEmpty()) {
             return TransformManager.SCOPE_FULL_PROJECT
